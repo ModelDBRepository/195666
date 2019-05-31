@@ -1,0 +1,51 @@
+
+objref Istim
+
+tstop = 2300
+tstart = 400
+
+esyn = new List()	// clear any previously loaded excitatory synapses
+isyn = new List()	// clear any previously loaded inhibitory synapses
+
+// increase dt to speed up simulation
+tmp = dt
+dt = 0.05
+
+proc StepStim() { local j, dur	localobj amp
+
+	dur = 1500	// 1.5 seconds current step duration
+	amp = new Vector(4)	// current step amplitudes (nA)
+	amp.x[0] = -2.5
+	amp.x[1] = -5
+	amp.x[2] = -7.5
+	amp.x[3] = -10
+
+	if (verbosity > 2) printf("running step current simulation ... \n")
+	vplot("Tines[0]" )
+	scene_vector_[4].size(0,tstop, -130,-55)
+	scene_vector_[4].family(1)
+	
+	Istim = new IClamp(0.5)
+	Istim.del = tstart
+	Istim.dur = dur
+	
+	Tines[0] {
+		for (j=0; j<amp.size(); j=j+1) {
+		
+			Istim.amp = amp.x[j]
+
+			finitialize(v_init)
+			run()
+
+		}
+		
+		if (verbosity > 1) printf("Step currents finished\n")
+
+	}
+}
+
+StepStim()
+
+objref Istim	// remove current
+dt = tmp
+scene_vector_[4].family(0)

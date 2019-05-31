@@ -1,0 +1,43 @@
+
+tstop = 1300
+t1 = 400
+t0 = 300
+tstart = 300
+
+esyn = new List()	// clear any previously loaded excitatory synapses
+isyn = new List()	// clear any previously loaded inhibitory synapses
+
+
+proc SumStim() { local k, amp	localobj delay
+
+	amp=1	// 1 nA current
+	sEPSP_count=5		// a series of 5 sEPSP
+	delay = new Vector(4)	// delay between sEPSP (ms)
+	delay.x[0] = 5
+	delay.x[1] = 10
+	delay.x[2] = 15
+	delay.x[3] = 20
+
+	if (verbosity > 2) printf("running sEPSP simulation ... \n")
+	vplot("Tines[0]" )
+	scene_vector_[4].size(0,tstop, -70,-50)
+	scene_vector_[4].family(1)
+	
+	Tines[0] {
+		for (k=0; k<delay.size(); k=k+1) {
+		
+			{SumPulse( amp, sEPSP_count, delay.x[k], t1+200*k )}
+			finitialize(v_init)
+			run()
+
+		}
+
+		if (verbosity > 1) printf("Sum pulses finished\n")
+
+	}
+}
+
+SumStim()	// run simulation
+
+SumPulse( 0, sEPSP_count, 0, 0)	// remove current injection after running
+scene_vector_[4].family(0)

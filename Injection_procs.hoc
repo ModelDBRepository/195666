@@ -1,0 +1,88 @@
+//
+// SumPulse(amp, count, delay, start, dc, dc_start, dc_end)
+// InjectChirp(amp, f0, bta, start, chirptype, duration, dc, dc_start, dc_end)
+//
+// current injection procedures
+//
+//
+
+objref idc[1], sp[1]
+
+proc SumPulse() {local n, amp, count, delay, start, dc, dc_t1, dc_t2
+//SumPulse( amp, count, delay, start, dc, dc start, dc end)
+//e.g. Tines[786] {SumPulse( 3, 5, 10, 250, -3, 100, 400)}
+
+	n = numarg()
+
+	amp		= $1		// amplitude of sEPSP
+	count	= $2		// number sEPSP
+	if (count < 1) {
+		return
+	}
+	delay	= $3		// delay between sEPSP
+	start	= $4		// time to start sEPSP
+	if(n > 5) {
+		dc		= $5	// offset level
+		dc_t1 	= $6	// start of holding current
+		dc_t2	= $7	// end holding current		
+	} else {
+		dc = 0
+	}
+	
+	idc[0] = new IClamp(0.5)
+	idc[0].amp = dc
+	if (dc != 0) {
+		idc[0].dur = dc_t2 - dc_t1
+		idc[0].del = dc_t1
+	}
+	
+	objref sp[count]
+	for (i=0; i<count; i=i+1) {
+		sp[i] = new sEPSP(0.5)     // sEPSP waveform (defined in sEPSP.mod)
+		sp[i].A	= amp
+		sp[i].onset= start+delay*i
+	}
+	
+} // end SumPulses()
+
+
+proc InjectChirp() {local n, amp, f0, beta, start, flag, duration, dc, dc_t1, dc_t2
+//InjectChirp(amp, init_freq, beta, chirp start, chirp type, duration, dc, dc start, dc end)
+//e.g. Tines[786] {InjectChirp(2, 10, 0, 250, 0, 1000, -3, 100, 1400)}
+
+	n = numarg()
+
+	amp		= $1		// amplitude of the chirp
+	if (amp == 0) {
+		return
+	}
+	f0		= $2		// initial frequency of the chirp
+	beta 	= $3		// rate of frequency change
+	start	= $4		// start time of the chirp stimulation
+	flag	= $5		// type of chirp
+	duration	= $6	// duration of chirp (ms)
+	
+	if (n > 7) {
+		dc		= $7	// offset level
+		dc_t1 	= $8	// start of holding current
+		dc_t2	= $9	// end holding current		
+	} else {
+		dc = 0
+	}
+	
+	idc[0] = new IClamp(0.5)
+	idc[0].amp = dc
+	if (dc != 0) {
+		idc[0].dur = dc_t2 - dc_t1
+		idc[0].del = dc_t1
+	}
+
+	sp[0] = new chirp(0.5)     // chirp waveform (defined in chirp.mod)
+	sp[0].amp	= amp
+	sp[0].t1	= start
+	sp[0].beta	= beta
+	sp[0].Finit	= f0
+	sp[0].ctype	= flag
+	sp[0].dur	= duration
+
+} // end InjectChirp()

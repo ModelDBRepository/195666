@@ -1,0 +1,4 @@
+//moddir mod_files
+load_file("LGMD_setup.hoc")
+load_file("run_menu.hoc")
+

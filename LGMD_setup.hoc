@@ -1,0 +1,288 @@
+
+
+/* --- Set Global Simulation Parameters --- */
+showGUI = 1		// whether to open gui windows
+msplit = 1		// whether to split across multiple threads
+nmt = 8			// number of parallel threads to use (ignored if msplit == 0)
+verbosity = 2	// verbosity level (0-4)
+synCa = 3		// excitatory synapses cause Ca influx
+/*------ */
+
+
+/* --- Import the geometry and build cell  --- */
+load_file("LGMDreconstruction_NEURON.hoc")
+if (verbosity > 2) printf("3D morphology loaded \n")
+
+objref siz
+objref Ctines,Chandle
+objref FieldA, TineEnds
+
+siz = new SectionList()
+forsec "soma" {
+	siz.append()
+}
+forsec "SIZ" {
+	siz.append()
+}
+
+FieldA = new SectionList()
+forsec "MainTrunk"{
+	FieldA.append()
+}
+forsec "Tines" {
+	FieldA.append()
+}
+
+Ctines = new SectionList()
+Chandle = new SectionList()
+for i=0,21 {
+	FieldC[i] {Chandle.append()}
+}
+for i=22,454 {
+	FieldC[i] {Ctines.append()}
+}
+/*------ */
+
+
+/* --- Load init files and utility functions --- */
+load_file("init.hoc")
+load_file("guisetup.hoc")
+load_file("parinit.hoc")
+load_file("mview.hoc")
+load_file("Utilities.hoc")
+if (verbosity > 2) printf("SimUtilities loaded \n")
+load_file("Injection_procs.hoc")
+if (verbosity > 2) printf("Injection_procs loaded \n")
+/*------ */
+
+
+/* --- Set Membrane Parameters --- */
+gl = 1.0e-5		// base leak conductance (some sections set higher below)
+el = -68		// leak reversal potential
+Cm = 0.80		// membrane capacitance µF
+axial = 220		// base axial resistivity Ωcm (some section changed below)
+EK = -77		// K+ reversal potential
+ENa = 60		// Na+ reversal potential
+ECa = 150		// initial Ca2+ reversal potential (changes with Ca2+ influx and eflux)
+SIZNa = 0.45	// sodium channel density at siz
+gKdr = 1.0e-2	// base Kdr channel density
+SIZM = 5.5e-3	// M channel density at siz
+gcat = 1.4e-2	// CaT channeldensity
+gkca = 1.3e-2	// KCa channel density
+gcal = 2e-3		// CaL channel density
+
+
+forall {
+	Ra = axial
+	cm = Cm
+	insert pas
+	g_pas = gl
+	e_pas = el
+}
+/*------ */
+
+/* --- Adjust channel densities for each section --- */
+
+/*--- Axon --- */
+forsec "Axon" {
+	Ra=35
+	insert M
+	insert Na
+	insert HH_Kdr
+	insert h
+	g_pas=gl*5
+	gmax_M = SIZM/35
+	gmax_Na = SIZNa/30
+	gmax_HH_Kdr = gKdr
+	gmax_h = 5e-5
+	ek = EK
+	ena = ENa
+}
+/*------ */
+
+/*--- SIZ --- */
+forsec siz {
+	Ra=220
+	insert Na
+	insert HH_Kdr
+	insert M
+	insert KCa
+	insert CaT
+	insert CaL
+	insert CaInternal
+	g_pas = gl*5
+	gmax_Na = SIZNa
+	gmax_HH_Kdr = gKdr/4
+	gmax_M = SIZM
+	gmax_KCa = gkca
+	gmax_CaT = gcat
+	gmax_CaL = gcal
+	ek = EK
+	eca = ECa
+	ena = ENa
+}
+
+forsec "ASIZ" Ra=600
+forsec "DSIZ" Ra=100
+/*------ */
+
+/*--- Handle --- */
+forsec "Handle" {
+	Ra=60
+	insert Na
+	insert HH_Kdr
+	insert M
+	gmax_Na = 1.5e-2
+	gmax_HH_Kdr = gKdr
+	gmax_M = SIZM/40
+	ek = EK
+	ena = ENa
+}
+	/*--- procedure to set decreasing M density in handle--- */
+	proc handle_M_dist() { local D, Mhalf, MS, Mmax, Mmin	// 
+		Mmax = SIZM
+		Mmin = 8.0e-5
+		Mhalf = 25
+		MS = -50
+	
+		soma[0] {distance()}
+		forsec "Handle" {
+			D = distance(.5)
+			gmax_M = 0.27*(Mmin + (Mmax-Mmin)/(1+exp((Mhalf-D)/MS)))
+		}
+	}
+	/*------ */
+	/*--- procedure to set decreasing Na density in handle--- */
+	proc handle_Na_dist() { local D, d_half, Namax, S, Namin
+		Namin = 1.0e-2
+		Namax = SIZNa
+		d_half = 40
+		S = -90
+	
+		soma[0] {distance()}
+		forsec "Handle" {
+			D = distance(.5)
+			gmax_Na = 0.7*(Namin + (Namax-Namin)/(1+exp((d_half-D)/S)))
+		}
+	}
+	/*------ */
+for i=0,30 {		// Insert Ca in half of handle near SIZ
+	Handle[i] {
+	insert KCa
+	insert CaT
+	insert CaL
+	insert CaInternal
+	gmax_KCa = gkca
+	gmax_CaT = gcat
+	gmax_CaL = gcal
+	eca=ECa
+	}
+}
+/*------ */
+
+/* --- Set cai influx and eflux for SIZ and handle Parameters --- */
+forall if (ismembrane("CaInternal")) {
+	alpha_ca_CaInternal = 6.25e-4	// determines ICa : cai ratio
+	ca_init_CaInternal = 1.2e-3		// initial cai
+	tau_ca_CaInternal = 400			// time constant of eflux (ms)
+}
+tmax_CaL=0.1
+minca_KCa= 9.0e-4
+pwr_KCa = 4
+kD_ca_KCa= 3.0e-4
+tau_KCa = 2
+ca_min_CaInternal=1e-5
+/*------ */
+
+
+/*--- Field A --- */
+forsec "MainTrunk"{
+	Ra=120
+	insert Na
+	gmax_Na = 5e-3
+	ena = ENa
+}
+
+forsec FieldA {
+	insert HH_Kdr
+	insert M
+	insert NaP
+	insert cdp
+	insert CN
+	insert hcn
+	insert KD_ca3
+	gmax_hcn = 1.2e-4
+	gmax_HH_Kdr = gKdr/2
+	gmax_M = SIZM/140
+	gmax_NaP = 1e-4
+	gmax_KD_ca3 = 4.0e-2
+	ena = ENa
+	ek = EK
+}
+
+TineEnds = new SectionList()
+FindEnds(TineEnds,"Tines")
+forsec TineEnds Ra=30
+{Handle[20] distance() forsec FieldA gmax_hcn=0.4*gmax_hcn*(distance(0.5)/450)^6}	// set increasing hcn density
+Zratio_g( FieldA, "Handle[60]", "hcn", 0, 0, 1, 1.25, 0.01 )	// set increasing hcn density
+
+forsec FieldA gmax_KD_ca3= 3e-3 + gmax_hcn*140	// set increasing KD density
+
+	/* --- Set Ca pump parameters for Field A--- */
+	TotalPump_cdp = 8.5e-13
+	TotalBuffer_cdp=0.04
+	k1_cdp = 2.0
+	k3_cdp = 0.5
+	eca=ECa
+	/*------ */
+/*------ */
+
+
+/*--- Inhibitory Fields B,C --- */
+forsec "Field"{
+	Ra=100
+	insert M
+	insert KdrF
+	g_pas=gl*2
+	gmax_M = 5.0e-5
+	gmax_KdrF = 3.0e-03
+	ek=EK
+}
+
+Zratio_g(Ctines, "FieldC[19]", "M", 1.25e-5, 30, 1,2)	// set increasing M density
+Zratio_g("FieldB", "Handle[35]", "M", 1.25e-5, 30,1,2)	// set increasing M density
+
+forsec Chandle {
+	Ra=40
+	if (ismembrane("NaP")) uninsert NaP
+	if (ismembrane("h")) uninsert h
+	insert HH_Kdr
+	insert Na
+	g_pas = gl
+	gmax_HH_Kdr = gKdr
+	gmax_Na = 4.0e-3
+}
+/*------ */
+
+/*--- Neurite connecting the soma --- */
+forsec "CellBody"{
+	Ra=300
+	insert NaP
+	insert Na
+	insert HH_Kdr
+	gmax_NaP = 5.0e-5
+	gmax_Na = 1.5e-2
+	gmax_HH_Kdr = gKdr*2
+	ek = EK
+}
+/*------ */
+
+/*------ */
+
+
+if (msplit) {
+	// impedance measures only work in with single thread, so start multithread at end
+	startPar()
+}
+
+if (showGUI) RunControlWindow()

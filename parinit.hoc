@@ -1,0 +1,36 @@
+
+objectvar pc_
+issplit = 0
+if (name_declared("nmt") == 0) {
+	nmt = 8
+}
+
+//Begin ParallelComputeTool[0]
+//load_file("initpar.hoc")
+
+load_file("parcom.hoc")
+
+pc_ = ParallelComputeTool[0]
+
+proc startPar() {
+	pc_.nthread(nmt)
+	pc_.pthread(1)
+	pc_.multisplit(1)
+	issplit=1
+}
+
+proc stopPar() {
+	//stop
+	nmt = pc_.nthread_
+	pc_.nthread(1)
+	pc_.pthread(0)
+	pc_.multisplit(0)
+	issplit=0
+}
+
+if (showGUI) {
+	pc_.map("ParallelComputeTool[0]", 399, 8, 210.24, 248.64)
+}
+//objref ocbox_
+//End ParallelComputeTool[0]
+

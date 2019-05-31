@@ -1,0 +1,14 @@
+
+
+esynfile = "excsyn_50_158_0_0_onsetTimes.hoc"
+isynfile = "inhsyn_50_158_0_0_onsetTimes.hoc"
+
+simsecs = new SectionList()
+MakeSecList( simsecs,"soma[0]","Handle[30]","MainTrunk[0]","FieldC[15]","Tines[621]")
+
+tstop = 5300
+vplot( simsecs )
+shapeplot("cai", 6e-3, 0 )
+
+visualstim( esynfile, isynfile, simsecs )
+

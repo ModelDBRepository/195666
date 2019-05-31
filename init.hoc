@@ -1,0 +1,13 @@
+
+load_file("stdlib.hoc")
+load_file("stdrun.hoc")
+
+/* --- Initialize Global NEURON Settings --- */
+secondorder=2		// sets the time integration method
+v_init = -65		// initial membrane potential
+dt = 0.025			// time step of simulations (in ms)
+t = 0				// Neuron time (ms)
+realtime = 0		// real world time since simulation start
+steps_per_ms = 10	// number of points to plot
+screen_update_invl = 0.1	// how often to update plots
+
