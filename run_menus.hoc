@@ -1,6 +1,0 @@
-xpanel("Dewell Gabbiani 2018")
-    xbutton("simulate looming stimulus (takes a little under 10 minutes)","xopen(\"standard_loom.hoc\")")
-    xbutton("simulate series of 4 hyperpolarizing current injections", "xopen(\"current_steps.hoc\")")
-    xbutton("quit","quit")
-xpanel()
-

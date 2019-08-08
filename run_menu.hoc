@@ -1,6 +1,6 @@
 xpanel("Dewell Gabbiani 2018")
     xlabel("The time to run serially on a 2013 MacBook Pro is reported")
-    xbutton("simulate looming stimulus (takes a little under 10 minutes)","xoopen(\"standard_loom.hoc\")")
+    xbutton("simulate looming stimulus (takes a little under 10 minutes)","xopen(\"standard_loom.hoc\")")
     xbutton("simulate series of 4 hyperpolarizing current injections (4 minutes)", "xopen(\"current_steps.hoc\")")
     xbutton("100%_coherent_coarse.hoc (8 minutes)","xopen(\"100%_coherent_coarse.hoc\")")
     xbutton("60%_coherent_coarse.hoc (8 minutes)","xopen(\"60%_coherent_coarse.hoc\")")
